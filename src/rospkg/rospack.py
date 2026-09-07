@@ -240,8 +240,13 @@ class ManifestManager(object):
             # assign key before recursive call to prevent infinite case
             self._depends_cache[name] = s = set()
 
-            for p in names:
-                s.update(self.get_depends(p, implicit))
+            try:
+                for p in names:
+                    s.update(self.get_depends(p, implicit))
+            except (ResourceNotFound, InvalidManifest):
+                # Cycles may leave other entries based on this unfinished traversal.
+                self._depends_cache.clear()
+                raise
             # add in our own deps
             s.update(names)
             # cache the return value as a list
