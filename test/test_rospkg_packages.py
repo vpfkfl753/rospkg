@@ -274,6 +274,23 @@ def test_get_depends_repeated_failure(tmp_path, resource_type, invalid_manifest,
         assert r.get_depends('leaf') == []
 
 
+def test_get_rosdeps_repeated_failure(tmp_path):
+    from rospkg import RosPack, ResourceNotFound
+    for name, depends, rosdeps in [('A', ['B'], []), ('B', ['C'], ['dep_b'])]:
+        path = tmp_path / name
+        path.mkdir()
+        (path / 'manifest.xml').write_text(
+            '<package><license>BSD</license>%s%s</package>' % (
+                ''.join(f'<depend package="{dep}"/>' for dep in depends),
+                ''.join(f'<rosdep name="{dep}"/>' for dep in rosdeps)
+            )
+        )
+    r = RosPack(ros_paths=[str(tmp_path)])
+    for _ in range(3):
+        with pytest.raises(ResourceNotFound):
+            r.get_rosdeps('A')
+
+
 def get_stack_test_path():
     return os.path.abspath(os.path.join(os.path.dirname(__file__), 'stack_tests'))
 
